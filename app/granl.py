@@ -33,8 +33,9 @@ class GranLogia () :
         self.api_key = None
         self.root_dir = None
 
-    def request_process(self, request, subpath ) :        
-        data_response = jsonify({"message" : "No autorizado"})
+    def request_process(self, request, subpath ) :
+        message = "No autorizado"
+        data_response = jsonify({"message" : message})
         http_code  = 401
         logging.info("Reciv " + str(request.method) + " Contex: /scraper/" + str(subpath) )
         logging.info("Reciv Header :\n" + str(request.headers) )
@@ -63,14 +64,14 @@ class GranLogia () :
                         passwd = str(datos[1]).strip()
                         logging.info('User: ' + str(user) + " Passwd: ******** " )
                         if user != '' and passwd != '' :
-                            name, grade, message, code  = self.loginSystem( user, passwd )
-                            
-                data_response = jsonify({
-                    'message' : str(message),
-                    'user' : str(user),
-                    'grade' : str(grade),
-                    'name' : str(name)
-                })
+                            name, grade, message, code  = self.login_system( user, passwd )
+                            data_response = jsonify({
+                                'message' : str(message),
+                                'user' : str(user),
+                                'grade' : str(grade),
+                                'name' : str(name)
+                            })
+                            http_code  = 200
             elif str(subpath).find('access') >= 0 :
                 if data_clear != None :
                     datos = data_clear.split('&&')
@@ -144,39 +145,25 @@ class GranLogia () :
         del cipher
         return  data_response, http_code
     
-    def loginSystem(self, username, password) :
+    def login_system(self, username : str, password) :
         logging.info("Verifico Usuario: " + str(username) )
         message = "Ok"
         code = 200
         db_gl = GranLogiaBd()
-        user, saved_grade, name_saved = db_gl.verifiyUserPass( username, password )
-        del db_gl
+        user, saved_grade, name_saved = db_gl.verifiy_brother( username, password )
         if user == None :
             scraper = Selenium()
             grade, name_saved = scraper.login( username, password )
             del scraper
-            logging.info("Nombre: " + str(name_saved) + "Grade: " + str(grade) )
             if grade > 0 and grade < 4 :
-                try :
-                    if self.db != None :
-                        cursor = self.db.cursor()
-                        sql = """INSERT INTO secure (date_save, username, password, grade, name ) VALUES(%s, %s, %s, %s, %s)"""
-                        now = datetime.now()
-                        cursor.execute(sql, (now.strftime("%Y-%m-%d %H:%M:%S"), username, generate_password_hash(password), grade, name_saved ))
-                        self.db.commit()
-                        message = 'Usuario Creado'
-                        code = 201
-                        saved_grade = int(grade)
-                except Exception as e:
-                    print("ERROR BD:", e)
-                    self.db.rollback()
-                    message = "Error en BD"
-                    code = 500
-                    saved_grade = 0
-                    name_saved = ''
+                if db_gl.save_brother(username, password, grade, name_saved ) :
+                    saved_grade = grade
+                    message = "Usuario validado en GL"
+                    code = 201
             else :
                 message = "El usuario es inválido"
                 code = 409
+        del db_gl
         return name_saved, saved_grade, message, code 
 class GranLogiaBd() :
     db = None
@@ -207,7 +194,25 @@ class GranLogiaBd() :
     def isConnect(self) :
         return self.db != None
 
-
+    #================================================================================================
+    # Guarda info del qh
+    #================================================================================================
+    def save_brother(self, username, password, grade, real_name ):
+        logging.info('Guardo al Qh: ' + str(username))
+        success = False
+        try :
+            if self.db != None :
+                cursor = self.db.cursor()
+                sql = """INSERT INTO secure (date_save, username, password, grade, name ) VALUES(%s, %s, %s, %s, %s)"""
+                now = datetime.now()
+                cursor.execute(sql, (now.strftime("%Y-%m-%d %H:%M:%S"), username, generate_password_hash(password), grade, real_name ))
+                self.db.commit()
+                success = True
+        except Exception as e:
+            print("ERROR BD:", e)
+            self.db.rollback()
+            success = False
+        return success
     #================================================================================================
     # obtiene grado del qh
     #================================================================================================
@@ -263,7 +268,7 @@ class GranLogiaBd() :
     #================================================================================================
     # Verifica si exsite el QH en la base de datos y compara la contrasenna
     #================================================================================================
-    def verifiyUserPass( self, username, password ) :
+    def verifiy_brother( self, username, password ) :
         logging.info("Rescato password para usuario: " + str(username) )
         passwordBd = None
         userResp = None

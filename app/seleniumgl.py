@@ -26,9 +26,8 @@ class Selenium() :
         try:
             self.root_dir = root_dir
             self.hub = str(os.environ.get('HUB_SELENIUM_URL','None')) + '/wd/hub'
-            logging.info("HUB: " + self.hub)
         except Exception as e :
-            print("ERROR BD:", e)
+            print("ERROR Selenium:", e)
 
     def __del__(self):
         if self.driver != None:
@@ -37,7 +36,8 @@ class Selenium() :
         try:
             if self.hub != None :
                 logging.info("Remote HUB: " + self.hub)
-                self.driver = webdriver.Remote(self.hub, desired_capabilities=webdriver.DesiredCapabilities.CHROME)
+                #self.driver = webdriver.Remote(self.hub, desired_capabilities=webdriver.DesiredCapabilities.CHROME)
+                self.driver = webdriver.Remote(self.hub, options=webdriver.ChromeOptions())
                 self.wait = WebDriverWait(self.driver, 30)  # 30 segundos
         except Exception as e:
             self.driver = None
@@ -81,9 +81,8 @@ class Selenium() :
             name = str(oneandtwo[0]) + ' ' + str(oneandtwo[1])
             grade = 1
             # me dirijo a la biblioteca
-            element = self.wait.until(ec.visibility_of_element_located((By.XPATH, "//div[@id='wrap']/div[2]/div[2]/div[3]/a/div/p")))
+            element = self.wait.until(ec.visibility_of_element_located((By.XPATH, "//img[@alt='Biblioteca']")))
             element.click()
-
         except Exception as e:
             print("ERROR, no se pudo hacer login ", e)
             grade = 0
