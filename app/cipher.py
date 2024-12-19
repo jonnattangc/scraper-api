@@ -15,10 +15,11 @@ ROOT_DIR = os.path.dirname(__file__)
 class Cipher() :
     cipher = None
     aes_key = None
-    iv = b'1234567890123456'
+    iv = None
     def __init__(self, ) :
         key = os.environ.get('AES_KEY','None')
         self.aes_key = key.encode('utf-8')[:32]
+        self.iv = b'1234567890123456'
 
     def __del__(self):
         self.aes_key = None
@@ -66,15 +67,13 @@ class Cipher() :
         response_data = {"message":"NOk", "data": None }
         http_code = 400
         logging.info("Reciv Header : " + str(request.headers) )
-        # logging.info("Reciv " + str(request.method) )
         logging.info("Reciv Data: " + str(request.data) )
         request_data = request.get_json()
-        user = request_data['user']
-        passwd = request_data['password']
-        clean_text = str(user) + "|||" + str(passwd)
-        aes_encrypt = self.aes_encrypt( clean_text )
-        logging.info("Decifrada : " + str(self.aes_decrypt( str(aes_encrypt) )) )
+        data = request_data['data']
+        aes_encrypt = self.aes_encrypt( str(data) )
+        data_clean = self.aes_decrypt( str(aes_encrypt) )
+        logging.info("Decifrada : " + str(data_clean) )
         if aes_encrypt != None :
-            response_data = {"message":"Ok", "data": str(aes_encrypt) }
+            response_data = {"message":"Ok", "data_cipher": str(aes_encrypt), "data_clean": str(data_clean) }
             http_code = 200
         return response_data, http_code

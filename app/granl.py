@@ -52,8 +52,8 @@ class GranLogia () :
             data_cipher = str(request_data['data'])
             logging.info('API Key Ok, Data Recibida: ' + data_cipher )
             data_clear = cipher.aes_decrypt(data_cipher)
-            logging.info('Data Claro: ' + data_clear )
-
+            logging.info('Data Claro: ' + str(data_clear) )
+        # proceso
         if request.method == 'POST' :
             if str(subpath).find('login') >= 0 :
                 user = name = grade = None
@@ -79,9 +79,9 @@ class GranLogia () :
                         user = str(datos[0]).strip()
                         grade = str(datos[1]).strip()
                         if user != '' and grade != '' :
-                            gl = Selenium()
-                            message, code, http_code  = gl.validateAccess( user, grade )
-                            del gl
+                            db = GranLogiaBd()
+                            message, code, http_code  = db.validate_access( user, grade )
+                            del db
                             data_response = jsonify({
                                 'message' : str(message),
                                 'code' : str(code)
@@ -90,9 +90,9 @@ class GranLogia () :
                 if data_clear != None :
                     user = data_clear.strip()
                     if user != '' :
-                        gl = Selenium()
-                        message, grade, http_code  = gl.getGrade( user )
-                        del gl
+                        db = GranLogiaBd()
+                        message, grade, http_code  = db.get_grade( user )
+                        del db
                         data_response = jsonify({
                             'message' : str(message),
                             'grade' : str(grade)
@@ -103,48 +103,28 @@ class GranLogia () :
                     if len(datos) == 3 and datos[0] != None and datos[1] != None and datos[2] != None :
                         name_doc = str(datos[0]).strip()
                         grade_doc = str(datos[1]).strip()
-                        id_qh = str(datos[2]).strip()
-                        if name_doc != '' and grade_doc != '' and id_qh != '' :
-                            gl = Selenium()
-                            message, code, http_code  = gl.validateAccess( id_qh, grade_doc )
-                            del gl
+                        user_name = str(datos[2]).strip()
+                        if name_doc != '' and grade_doc != '' and user_name != '' :
+                            db = GranLogiaBd()
+                            message, code, http_code  = db.validate_access( user_name, grade_doc )
+                            del db
                             if code != -1 and message != None and http_code == 200 :
-                                url_doc = 'https://dev.jonnattan.com/logia/docs/pdf/' + str(time.monotonic_ns()) + '/'
-                                logging.info('URL Base: ' + str(url_doc) )
+                                http = request.headers.get('x-forwarded-proto')
+                                host = request.headers.get('x-forwarded-host')
                                 data_cipher = cipher.aes_encrypt( name_doc )
+                                url_doc = str(http) + '://' + str(host) + '/logia/docs/pdf/' + str(time.monotonic_ns()) + '/' + str(data_cipher)
+                                logging.info('URL Base: ' + str(url_doc) )
                                 data_response = jsonify({
-                                    'data' : str(data_cipher.decode('UTF-8')),
                                     'url'  : str(url_doc)
                                 })
             else: 
                 data_response = jsonify({"message" : "No procesado el contexto: " + str(subpath)})
                 http_code = 404
-        elif request.method == 'GET' :
-            if str(subpath).find('docs/pdf') >= 0 :
-                file_path = os.path.join(self.root_dir, 'static/logia')
-                route = subpath.replace('docs/pdf', '')
-                paths = str(route).split('/')
-                if len(paths) == 2 :
-                    mark = int(str(paths[0]).strip())
-                    diff = time.monotonic_ns() - mark
-                    logging.info("DIFFFFFF: " + str(diff))
-                    if diff < 1000000000 :
-                        data_bytes = cipher.aes_decrypt(str(paths[1]).strip())
-                        data_clear = str(data_bytes.decode('UTF-8'))
-                        logging.info("Find File: " + str(data_clear))
-                        data_response = send_from_directory(file_path, data_clear)
-                        http_code = 200
-            elif str(subpath).find('images') >= 0 :
-                fromHost = request.headers.get('Referer')
-                if fromHost != None :
-                    if str(fromHost).find('https://logia.buenaventuracadiz.com') >= 0 :
-                        file_path = os.path.join(self.root_dir, 'static')
-                        file_path = os.path.join(file_path, 'images')
-                        data_response =  send_from_directory(file_path, str(name) )
-                        http_code = 200
         del cipher
         return  data_response, http_code
-    
+
+
+
     def login_system(self, username : str, password) :
         logging.info("Verifico Usuario: " + str(username) )
         message = "Ok"
@@ -216,7 +196,7 @@ class GranLogiaBd() :
     #================================================================================================
     # obtiene grado del qh
     #================================================================================================
-    def getGrade(self, username ) :
+    def get_grade(self, username ) :
         logging.info('Obtiene grado de: ' + str(username))
         message = "Usuario no existe"
         grade  = 0
@@ -230,7 +210,7 @@ class GranLogiaBd() :
                 for row in results:
                     grade = int(row['grade'])
                     if grade > 0 and grade <=3 :
-                        message = 'Servicio ejecutado exitosamente'
+                        message = 'Grado ' + str(grade)
                         http_code = 200
         except Exception as e:
             print("ERROR BD:", e)
@@ -241,7 +221,7 @@ class GranLogiaBd() :
     #================================================================================================
     # Valido el grado del QH logeado con el del documento que desea ver
     #================================================================================================
-    def validateAccess(self, username, grade) :
+    def validate_access(self, username, grade) :
         logging.info('Valido acceso de usuario: ' + str(username)  + ' a cosas de ' + str(grade))
         message = "Usuario no autorizado"
         code  = -1

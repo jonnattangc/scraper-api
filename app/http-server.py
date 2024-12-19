@@ -46,11 +46,7 @@ logger = logging.getLogger('HTTP')
 # Configuraciones generales del servidor Web
 # ===============================================================================
 
-SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY','NO_SECRET_KEY')
-SECRET_CSRF = os.environ.get('SECRET_KEY_CSRF','KEY-CSRF-ACA-DEBE-IR')
-
 app = Flask(__name__)
-app.config.update( DEBUG=False, SECRET_KEY = str(SECRET_CSRF), )
 
 #login_manager = LoginManager()
 #login_manager.init_app(app)
@@ -69,7 +65,7 @@ ROOT_DIR = os.path.dirname(__file__)
 #===============================================================================
 # Redirige
 #===============================================================================
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/scraper', methods=['GET', 'POST'])
 @csrf.exempt
 def index():
     logging.info("Reciv solicitude endpoint: /" )
@@ -78,7 +74,7 @@ def index():
 #===============================================================================
 # Redirige
 #===============================================================================
-@app.route('/<path:subpath>', methods=('GET', 'POST'))
+@app.route('/scraper/<path:subpath>', methods=('GET', 'POST'))
 @csrf.exempt
 def process_context( subpath ):
     logging.info("Reciv solicitude endpoint: " + subpath )
@@ -87,7 +83,7 @@ def process_context( subpath ):
 #===============================================================================
 # Informaci'on
 #===============================================================================
-@app.route('/info', methods=['GET', 'POST'])
+@app.route('/scraper/info', methods=['GET', 'POST'])
 @csrf.exempt
 def info_proccess():
     return jsonify({
@@ -117,7 +113,7 @@ def unauthorized():
 #===============================================================================
 # Se checkea el estado del servidor completo para reportar
 #===============================================================================
-@app.route('/checkall', methods=['GET'])
+@app.route('/scraper/checkall', methods=['GET'])
 @auth.login_required
 @csrf.exempt
 def check_proccess():
@@ -141,7 +137,7 @@ def gran_logia_process_scraper(subpath):
 # ==============================================================================
 # Procesa peticiones de la pagina de la logia
 # ==============================================================================
-@app.route('/scraper/ionix/<path:subpath>', methods=['POST', 'GET'])
+@app.route('/scraper/ionix/<path:subpath>', methods=['POST'])
 @csrf.exempt
 @auth.login_required
 def ionix_process_scraper(subpath):
@@ -150,6 +146,17 @@ def ionix_process_scraper(subpath):
     del gl
     return data, code
 
+# ===============================================================================
+# Cipher
+# ===============================================================================
+@app.route('/scraper/cipher/test', methods=['POST'])
+@csrf.exempt
+@auth.login_required
+def cipher_test():
+    cipher = Cipher()
+    data, code = cipher.test( request )
+    del cipher
+    return jsonify(data), code
 
 # ===============================================================================
 # Favicon
@@ -162,16 +169,6 @@ def favicon():
     logging.info("Icono: " + str( file_path ) )
     return send_from_directory(file_path,
             'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-
-@app.route('/page/cipher', methods=['POST'])
-@csrf.exempt
-@auth.login_required
-def cipher_test():
-    cipher = Cipher()
-    data, code = cipher.test( request )
-    del cipher
-    return jsonify(data), code
 
 # ===============================================================================
 # Metodo Principal que levanta el servidor
