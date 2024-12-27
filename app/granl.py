@@ -38,12 +38,13 @@ class GranLogia () :
         data_response = jsonify({"message" : message})
         http_code  = 401
         logging.info("Reciv " + str(request.method) + " Contex: /scraper/" + str(subpath) )
-        logging.info("Reciv Header :\n" + str(request.headers) )
         logging.info("Reciv Data: " + str(request.data) )
+        logging.info("Reciv Header :\n" + str(request.headers) )
         # evlua pai key inmediatamente
         rx_api_key = request.headers.get('x-api-key')
         if str(rx_api_key) != str(self.api_key) :
             return  data_response, http_code
+        
         request_data = request.get_json()
         # se decifra el payload que llega si existe
         cipher = Cipher()
@@ -52,7 +53,7 @@ class GranLogia () :
             data_cipher = str(request_data['data'])
             logging.info('API Key Ok, Data Recibida: ' + data_cipher )
             data_clear = cipher.aes_decrypt(data_cipher)
-            logging.info('Data Claro: ' + str(data_clear) )
+            # logging.info('Data Claro: ' + str(data_clear) )
         # proceso
         if request.method == 'POST' :
             if str(subpath).find('login') >= 0 :
