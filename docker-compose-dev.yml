@@ -2,7 +2,7 @@ version: '3.9'
 services:
     scraper-dev:
       container_name: scraper-dev
-      image: scraper:dev
+      image: scraper-img:dev
       volumes:
         - ./app:/home/jonnattan/app
       ports:

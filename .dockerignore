@@ -4,3 +4,7 @@ Dockerfile
 Dockerfile-Dev 
 README.md
 SECURITY.md
+app/
+.git*
+.dockerignore
+SECURITY.md

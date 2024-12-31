@@ -12,7 +12,7 @@ ENV SERVER_API_KEY ''
 ENV AES_KEY ''
 
 ENV FLASK_APP app
-ENV FLASK_DEBUG development
+ENV FLASK_DEBUG production
 
 RUN adduser -h /home/jonnattan -u 10100 -g 10101 --disabled-password jonnattan
 
