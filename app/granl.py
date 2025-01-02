@@ -42,7 +42,11 @@ class GranLogia () :
         logging.info("Reciv Header :\n" + str(request.headers) )
         # evlua pai key inmediatamente
         rx_api_key = request.headers.get('x-api-key')
+        if rx_api_key == None :
+            logging.error('API Key NOk')
+            return  data_response, http_code
         if str(rx_api_key) != str(self.api_key) :
+            logging.error('Error API Key')
             return  data_response, http_code
         
         request_data = request.get_json()
@@ -65,14 +69,13 @@ class GranLogia () :
                         passwd = str(datos[1]).strip()
                         logging.info('User: ' + str(user) + " Passwd: ******** " )
                         if user != '' and passwd != '' :
-                            name, grade, message, code  = self.login_system( user, passwd )
+                            name, grade, message, http_code  = self.login_system( user, passwd )
                             data_response = jsonify({
                                 'message' : str(message),
                                 'user' : str(user),
                                 'grade' : str(grade),
                                 'name' : str(name)
                             })
-                            http_code  = 200
             elif str(subpath).find('access') >= 0 :
                 if data_clear != None :
                     datos = data_clear.split('&&')
@@ -123,8 +126,6 @@ class GranLogia () :
                 http_code = 404
         del cipher
         return  data_response, http_code
-
-
 
     def login_system(self, username : str, password) :
         logging.info("Verifico Usuario: " + str(username) )
