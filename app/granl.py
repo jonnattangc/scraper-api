@@ -38,12 +38,17 @@ class GranLogia () :
         data_response = jsonify({"message" : message})
         http_code  = 401
         logging.info("Reciv " + str(request.method) + " Contex: /scraper/" + str(subpath) )
-        logging.info("Reciv Header :\n" + str(request.headers) )
         logging.info("Reciv Data: " + str(request.data) )
+        logging.info("Reciv Header :\n" + str(request.headers) )
         # evlua pai key inmediatamente
         rx_api_key = request.headers.get('x-api-key')
-        if str(rx_api_key) != str(self.api_key) :
+        if rx_api_key == None :
+            logging.error('x-api-key no found')
             return  data_response, http_code
+        if str(rx_api_key) != str(self.api_key) :
+            logging.error('x-api-key is not valid')
+            return  data_response, http_code
+        
         request_data = request.get_json()
         # se decifra el payload que llega si existe
         cipher = Cipher()
@@ -52,7 +57,7 @@ class GranLogia () :
             data_cipher = str(request_data['data'])
             logging.info('API Key Ok, Data Recibida: ' + data_cipher )
             data_clear = cipher.aes_decrypt(data_cipher)
-            logging.info('Data Claro: ' + str(data_clear) )
+            # logging.info('Data Claro: ' + str(data_clear) )
         # proceso
         if request.method == 'POST' :
             if str(subpath).find('login') >= 0 :
@@ -64,14 +69,14 @@ class GranLogia () :
                         passwd = str(datos[1]).strip()
                         logging.info('User: ' + str(user) + " Passwd: ******** " )
                         if user != '' and passwd != '' :
-                            name, grade, message, code  = self.login_system( user, passwd )
+                            name, grade, message, http_code, maintainer  = self.login_system( user, passwd )
                             data_response = jsonify({
                                 'message' : str(message),
                                 'user' : str(user),
                                 'grade' : str(grade),
-                                'name' : str(name)
+                                'name' : str(name),
+                                'maintainer' : bool(maintainer)
                             })
-                            http_code  = 200
             elif str(subpath).find('access') >= 0 :
                 if data_clear != None :
                     datos = data_clear.split('&&')
@@ -123,17 +128,16 @@ class GranLogia () :
         del cipher
         return  data_response, http_code
 
-
-
     def login_system(self, username : str, password) :
         logging.info("Verifico Usuario: " + str(username) )
         message = "Ok"
         code = 200
         db_gl = GranLogiaBd()
-        user, saved_grade, name_saved = db_gl.verifiy_brother( username, password )
+        user, saved_grade, name_saved, maintainer = db_gl.verifiy_brother( username, password )
         if user == None :
             scraper = Selenium()
             grade, name_saved = scraper.login( username, password )
+            maintainer = False
             del scraper
             if grade > 0 and grade < 4 :
                 if db_gl.save_brother(username, password, grade, name_saved ) :
@@ -144,32 +148,24 @@ class GranLogia () :
                 message = "El usuario es inválido"
                 code = 409
         del db_gl
-        return name_saved, saved_grade, message, code 
+        return name_saved, saved_grade, message, code, maintainer
 class GranLogiaBd() :
     db = None
-    host = os.environ.get('HOST_BD','None')
-    user = os.environ.get('USER_BD','None')
-    password = os.environ.get('PASS_BD','None')
-    database = 'gral-purpose'
-
     def __init__(self) :
         try:
-            self.db = pymysql.connect(host=self.host, user=self.user, password=self.password, database=self.database,cursorclass=pymysql.cursors.DictCursor)
+            host = os.environ.get('HOST_BD','None')
+            user = os.environ.get('USER_BD','None')
+            password = os.environ.get('PASS_BD','None')
+            port = int(os.environ.get('PORT_BD', 3306))
+            eschema = str(os.environ.get('SCHEMA_BD','gral-purpose'))
+            self.db = pymysql.connect(host=host, port=port, user=user, password=password, database=eschema, cursorclass=pymysql.cursors.DictCursor)
         except Exception as e :
-            print("ERROR BD:", e)
+            print("ERROR __init__:", e)
             self.db = None
 
     def __del__(self):
         if self.db != None:
             self.db.close()
-
-    def connect( self ) :
-        try:
-            if self.db == None :
-                self.db = pymysql.connect(host=self.host, user=self.user, password=self.password, database=self.database,cursorclass=pymysql.cursors.DictCursor)
-        except Exception as e :
-            print("ERROR BD:", e)
-            self.db = None
     
     def isConnect(self) :
         return self.db != None
@@ -254,6 +250,7 @@ class GranLogiaBd() :
         userResp = None
         grade = 0
         name = ''
+        maintainer = False
         try :
             if self.db != None :
                 cursor = self.db.cursor()
@@ -268,7 +265,8 @@ class GranLogiaBd() :
                     userBd = str(row['username'])
                     name = str(row['name'])
                     grade = int(str(row['grade']))
-                    logging.info("Usuario " + str(name) + " encontrado en BD interna")
+                    maintainer = bool(row['maintainer'])
+                    logging.info("Usuario " + str(name) + " encontrado en BD interna, Maintainer: " + str(maintainer))
                 # guardo lo que se necesita y solo si existen ambos valores
                 if userBd != None and passwordBd != None :
                     check = check_password_hash(passwordBd, password ) 
@@ -279,10 +277,12 @@ class GranLogiaBd() :
                         logging.info("Ckeck: " + str(check)+ " Error validando passwd de " + str(username) ) 
                         grade = 0
                         name = ''
+                        maintainer = False
                 else :
                   logging.info('user y/o password no encontrado')  
                   grade = 0
                   name = ''
+                  maintainer = False
         except Exception as e:
             print("ERROR BD:", e)
-        return userResp, grade, name
+        return userResp, grade, name, maintainer

@@ -1,3 +1,10 @@
-# Ignore everything
-**
-!requirements.txt
+docker-compose.yml
+docker-compose-dev.yml
+Dockerfile
+Dockerfile-Dev 
+README.md
+SECURITY.md
+app/
+.git*
+.dockerignore
+SECURITY.md

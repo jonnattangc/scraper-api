@@ -13,29 +13,22 @@ except ImportError:
 
 class Security() :
     db = None
-    host = os.environ.get('HOST_BD','None')
-    user = os.environ.get('USER_BD','None')
-    password = os.environ.get('PASS_BD','None')
-    database = 'security'
 
     def __init__(self) :
         try:
-            self.db = pymysql.connect(host=self.host, user=self.user, password=self.password, database=self.database,cursorclass=pymysql.cursors.DictCursor)
+            host = os.environ.get('HOST_BD','None')
+            user = os.environ.get('USER_BD','None')
+            password = os.environ.get('PASS_BD','None')
+            port = int(os.environ.get('PORT_BD', 3306))
+            eschema = str(os.environ.get('SCHEMA_BD','gral-purpose'))
+            self.db = pymysql.connect(host=host, port=port, user=user, password=password, database=eschema, cursorclass=pymysql.cursors.DictCursor)
         except Exception as e :
-            print("ERROR BD:", e)
+            print("ERROR BD __init__() :", e)
             self.db = None
 
     def __del__(self):
         if self.db != None:
             self.db.close()
-
-    def connect( self ) :
-        try:
-            if self.db == None :
-                self.db = pymysql.connect(host=self.host, user=self.user, password=self.password, database=self.database,cursorclass=pymysql.cursors.DictCursor)
-        except Exception as e :
-            print("ERROR BD:", e)
-            self.db = None
 
     def isConnect(self) :
         return self.db != None
@@ -59,7 +52,7 @@ class Security() :
                       userBd = None
 
         except Exception as e:
-            print("ERROR BD:", e)
+            print("ERROR BD verifiyUserPass():", e)
         return userBd
 
     def generateUser(self, user, password) :

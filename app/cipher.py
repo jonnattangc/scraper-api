@@ -58,6 +58,7 @@ class Cipher() :
             data_clear = cipher.decrypt(data_cipher) # se desencriptan los bytes
             if data_clear != None :
                 data_clear_str = data_clear.decode() # se llega la cadeba de bytes a texto
+                data_clear_str = data_clear_str.strip()
         except Exception as e:
             print("ERROR Decipher:", e)
             data_clear_str = None
