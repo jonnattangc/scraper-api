@@ -56,7 +56,7 @@ csrf.init_app(app)
 
 auth = HTTPBasicAuth()
 # cors = CORS(app, resources={r"/page/*": {"origins": ["*"]}})
-cors = CORS(app, resources={r"/scraper/*": {"origins": ["dev.jonnattan.com"]}})
+cors = CORS(app, resources={r"/scraper/*": {"origins": ["dev.jonnattan.com","logia.buenaventuracadiz.cl"]}})
 # ===============================================================================
 # variables globales
 # ===============================================================================
