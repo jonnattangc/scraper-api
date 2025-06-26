@@ -4,6 +4,7 @@ try:
     import logging
     import sys
     import os
+    import unicodedata
     from selenium import webdriver
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support.wait import WebDriverWait
@@ -78,7 +79,9 @@ class Selenium() :
             name = str(element.text.strip())
             logging.info("Loging [Ok], Nombre: " + str(name) )
             oneandtwo =  name.split(' ')
-            name = str(oneandtwo[0]) + ' ' + str(oneandtwo[1])
+            name = str(oneandtwo[0]) 
+            if len(oneandtwo) > 1 :
+                name = name + ' ' + str(oneandtwo[1])
             grade = 1
             # me dirijo a la biblioteca
             element = self.wait.until(ec.visibility_of_element_located((By.XPATH, "//img[@alt='Biblioteca']")))
@@ -106,6 +109,34 @@ class Selenium() :
                 logging.info("Se detecta que es grado 3")
             except Exception as e:
                 print('No se encuentra indicios de ser maestro: ', e)
-
+        
+        name = self.limpiar_texto(name)
         logging.info('El QH ' + str(name) + ' es del grado: ' + str(grade) )
+        
         return grade, name
+
+    def limpiar_texto(self, texto, mantener_enie=True):
+        # 1. Normalizar el texto a la forma 'NFKD' (Normal Form Compatibility Decomposition)
+        # Esto separa los caracteres base de sus diacr'iticos (tildes, etc.)
+        texto_normalizado = unicodedata.normalize('NFKD', texto)
+
+        # 2. Filtrar caracteres:
+        #    - Quedarse solo con los caracteres ASCII (letras sin acentos).
+        #    - Manejar la 'ñ' y 'Ñ' específicamente.
+        texto_limpio = []
+        for caracter in texto_normalizado:
+            if 'a' <= caracter.lower() <= 'z': # Verifica si es una letra del alfabeto ASCII
+                texto_limpio.append(caracter)
+            elif caracter.lower() == 'ñ':
+                if mantener_enie:
+                    texto_limpio.append(caracter)
+                else:
+                    texto_limpio.append('n') # Transforma 'ñ' a 'n'
+            # Podrías añadir más condiciones si quieres mantener números, espacios, etc.
+            elif caracter.isspace(): # Mantener espacios en blanco
+                texto_limpio.append(caracter)
+            # O si solo quieres letras y quitas todo lo dem'as:
+            else:
+                pass # No añade el caracter si no es una letra o ñ
+
+        return "".join(texto_limpio)
