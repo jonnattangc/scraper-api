@@ -17,6 +17,7 @@ try:
     from security import Security
     from check import Checker
     from granl import GranLogia
+    from bank_scraping import BankScraping
 
 except ImportError:
 
@@ -137,15 +138,23 @@ def gran_logia_process_scraper(subpath):
 # ==============================================================================
 # Procesa peticiones de la pagina de la logia
 # ==============================================================================
-@app.route('/scraper/ionix/<path:subpath>', methods=['POST'])
+@app.route('/scraper/bank', methods=['POST', 'GET']) 
 @csrf.exempt
 @auth.login_required
-def ionix_process_scraper(subpath):
-    gl = GranLogia( ROOT_DIR )
-    data, code = gl.request_process( request, subpath )
-    del gl
-    return data, code
+def bch_process_scrapper_root():
+    return process_bchscraper( request, None )
 
+@app.route('/scraper/bank/<path:subpath>', methods=['POST', 'GET']) 
+@csrf.exempt
+@auth.login_required
+def bch_process_scrapper(subpath):
+    return process_bchscraper( request, subpath )
+
+def process_bchscraper(request, subpath):
+    scraping_bank : BankScraping = BankScraping( )
+    data, code = scraping_bank.request_process( request, subpath )
+    del scraping_bank
+    return data, code
 # ===============================================================================
 # Cipher
 # ===============================================================================

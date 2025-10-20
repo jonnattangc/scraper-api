@@ -72,19 +72,21 @@ class Selenium() :
                 pass
         try:
             logging.info("Verifico si entre...")
-            browser.save_screenshot(os.path.join("./", "paso 1.png"))
+            # browser.save_screenshot(os.path.join("./", "paso 1.png"))
             # browser.execute_script("window.scrollTo(0, 0);")
-            element = self.wait.until(ec.visibility_of_element_located((By.XPATH, "//div[@id='custom_nav_chico']/nav/ul[2]/li/a/b/span")))
+            element = self.wait.until(ec.visibility_of_element_located((By.XPATH, "//div[@id='custom_nav_chico']/nav")))
             name = str(element.text.strip())
             logging.info("Loging [Ok], Nombre: " + str(name) )
             oneandtwo =  name.split(' ')
-            name = str(oneandtwo[0]) + ' ' + str(oneandtwo[1])
+            name = str(oneandtwo[0])
+            if len(oneandtwo) > 1 : 
+                name = name + ' ' + str(oneandtwo[1])
             grade = 1
             # me dirijo a la biblioteca
             element = self.wait.until(ec.visibility_of_element_located((By.XPATH, "//img[@alt='Biblioteca']")))
             element.click()
         except Exception as e:
-            print("ERROR, no se pudo hacer login ", e)
+            print("ERROR, no se pudo hacer login ", str(e))
             grade = 0
             try:
                 browser.save_screenshot(os.path.join(self.root_dir, "/login_error.png"))
@@ -93,7 +95,7 @@ class Selenium() :
 
         if grade == 1 :
             try :
-                element = browser.find_element(By.XPATH, "//img[@alt='Biblioteca Compañeros']")
+                element = browser.find_element(By.XPATH, "//span[normalize-space()='Biblioteca Compañeros']")
                 grade = 2
                 logging.info("Se detecta que es grado 2")
             except Exception as e:
@@ -101,7 +103,7 @@ class Selenium() :
 
         if grade == 2 :
             try :
-                element = browser.find_element(By.XPATH, "//img[@alt='Biblioteca Maestros']")
+                element = browser.find_element(By.XPATH, "//span[normalize-space()='Biblioteca Maestros']")
                 grade = 3
                 logging.info("Se detecta que es grado 3")
             except Exception as e:

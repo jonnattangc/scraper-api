@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM mcr.microsoft.com/playwright/python:v1.55.0-jammy
 
 LABEL MAINTAINER="Jonnattan Griffiths"
 LABEL VERSION=1.0

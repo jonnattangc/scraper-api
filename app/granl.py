@@ -5,6 +5,7 @@ try:
     import pymysql.cursors
     from datetime import datetime
     from seleniumgl import Selenium
+    from playwrightgl import Playwrightgl
     import time
     from cipher import Cipher
     from werkzeug.security import generate_password_hash, check_password_hash
