@@ -5,7 +5,10 @@ try:
     import pymysql.cursors
     from datetime import datetime
     from seleniumgl import Selenium
-    from playwrightgl import Playwrightgl
+    from aqh_login import AQHLogin
+    from mimasoneria_scraper import Mimasoneria
+    from samqh_scraper import Samqh
+    from elearn_scraper import Elearning
     import time
     from cipher import Cipher
     from werkzeug.security import generate_password_hash, check_password_hash
@@ -58,7 +61,7 @@ class GranLogia () :
             data_cipher = str(request_data['data'])
             logging.info('API Key Ok, Data Recibida: ' + data_cipher )
             data_clear = cipher.aes_decrypt(data_cipher)
-            # logging.info('Data Claro: ' + str(data_clear) )
+            ## logging.info('Data Claro: ' + str(data_clear) )
         # proceso
         if request.method == 'POST' :
             if str(subpath).find('login') >= 0 :
@@ -123,6 +126,19 @@ class GranLogia () :
                                 data_response = jsonify({
                                     'url'  : str(url_doc)
                                 })
+            elif str(subpath).find('saved') >= 0 :
+                if data_clear != None :
+                    datos = data_clear.split('|||')
+                    if len(datos) == 2 and datos[0] != None and datos[1] != None :
+                        username = str(datos[0]).strip()
+                        password = str(datos[1]).strip()
+                        if username != '' and password != '' :
+                            logging.info(f"Guardo Usuario: {username} Passwd: {password} " )
+                            db_gl = GranLogiaBd()
+                            if db_gl.save_brother(username, password, 1, 'Desconocido' ) :
+                                data_response = jsonify({'Response'  : 'Ok'})
+                                code = 201
+                            del db_gl
             else: 
                 data_response = jsonify({"message" : "No procesado el contexto: " + str(subpath)})
                 http_code = 404
@@ -135,19 +151,43 @@ class GranLogia () :
         code = 200
         db_gl = GranLogiaBd()
         user, saved_grade, name_saved, maintainer = db_gl.verifiy_brother( username, password )
+        # primero en BD y si no se encuentra pasa desde Mimasoneria a ELEARNING y Finalmente SAMQH
+        # dentro de SAMQH no hay forma de sacar el grado facilmente
         if user == None :
-            scraper = Selenium()
+            scraper : AQHLogin = None 
+            scraper = Mimasoneria()
             grade, name_saved = scraper.login( username, password )
-            maintainer = False
+            scraper.close_browser()
             del scraper
+            maintainer = False
             if grade > 0 and grade < 4 :
                 if db_gl.save_brother(username, password, grade, name_saved ) :
                     saved_grade = grade
                     message = "Usuario validado en GL"
                     code = 201
             else :
-                message = "El usuario es inválido"
-                code = 409
+                scraper = Elearning()
+                grade, name_saved = scraper.login(username, password )
+                scraper.close_browser()
+                del scraper
+                if grade > 0 and grade < 4 :
+                    if db_gl.save_brother(username, password, grade, name_saved ) :
+                        saved_grade = grade
+                        message = "Usuario validado en GL"
+                        code = 201
+                else :
+                    scraper = Samqh()
+                    grade, name_saved = scraper.login( username, password )
+                    scraper.close_browser()
+                    del scraper
+                    if grade > 0 and grade < 4 :
+                        if db_gl.save_brother(username, password, grade, name_saved ) :
+                            saved_grade = grade
+                            message = "Usuario validado en GL"
+                            code = 201
+                    else :
+                        message = "El usuario es inválido"
+                        code = 409
         del db_gl
         return name_saved, saved_grade, message, code, maintainer
 class GranLogiaBd() :
