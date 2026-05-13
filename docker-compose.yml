@@ -1,12 +1,10 @@
 services:
     scraper-api:
       container_name: scraper-api
-      # Crea la imagen con el archivo Dockerfile de esta misma carpeta
-      image: scraper:prd
-      build: .
-      restart: always
-      volumes:
-        - ./app:/home/jonnattan/app
+      image: jonnattangc/scraperservice:1.0.0
+      restart: none
+      #volumes:
+      #  - ./app:/home/jonnattan/app
       ports:
         - "8090:8090"
       env_file:

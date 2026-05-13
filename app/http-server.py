@@ -14,10 +14,10 @@ try:
     from flask import Flask, render_template, abort, make_response, request, redirect, jsonify, send_from_directory
     # Clases personales
     from cipher import Cipher
-    from security import Security
-    from check import Checker
-    from granl import GranLogia
-    from bank_scraping import BankScraping
+    from services.security_service import SecurityService
+    from services.health_service import HealthService
+    from services.gran_logia_service import GranLogiaService
+    from services.bank_service import BankService
 
 except ImportError:
 
@@ -99,8 +99,8 @@ def info_proccess():
 def verify_password(username, password):
     user = None
     if username != None :
-        basicAuth = Security()
-        user =  basicAuth.verifiyUserPass(username, password)
+        basicAuth = SecurityService()
+        user =  basicAuth.verify_user_pass(username, password)
         del basicAuth
     return user
 
@@ -118,7 +118,7 @@ def unauthorized():
 @auth.login_required
 @csrf.exempt
 def check_proccess():
-    checker = Checker()
+    checker = HealthService()
     json = checker.get_info()
     del checker
     return jsonify(json)
@@ -130,7 +130,7 @@ def check_proccess():
 @csrf.exempt
 @auth.login_required
 def gran_logia_process_scraper(subpath):
-    gl = GranLogia( ROOT_DIR )
+    gl = GranLogiaService( ROOT_DIR )
     data, code = gl.request_process( request, subpath )
     del gl
     return data, code
@@ -151,7 +151,7 @@ def bch_process_scrapper(subpath):
     return process_bchscraper( request, subpath )
 
 def process_bchscraper(request, subpath):
-    scraping_bank : BankScraping = BankScraping( )
+    scraping_bank : BankService = BankService( )
     data, code = scraping_bank.request_process( request, subpath )
     del scraping_bank
     return data, code
